@@ -127,22 +127,22 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#eef0f3] flex flex-col">
       {/* Top nav bar */}
-      <div className="bg-[#1b3f6b] h-10 flex items-center px-6 gap-4 shrink-0">
-        <span className="text-white font-bold text-[13px] tracking-wide uppercase">Mercury MES</span>
+      <div className="bg-[#1b3f6b] h-10 flex items-center px-4 sm:px-6 gap-2 sm:gap-4 shrink-0 overflow-x-auto">
+        <span className="text-white font-bold text-[13px] tracking-wide uppercase whitespace-nowrap">Mercury MES</span>
         <span className="text-[#7aaee0] text-[12px]">/</span>
-        <span className="text-[#7aaee0] text-[12px]">Freight Management</span>
-        <span className="text-[#7aaee0] text-[12px]">/</span>
-        <span className="text-white text-[12px]">Price Calculator</span>
+        <span className="text-[#7aaee0] text-[12px] hidden sm:inline whitespace-nowrap">Freight Management</span>
+        <span className="text-[#7aaee0] text-[12px] hidden sm:inline">/</span>
+        <span className="text-white text-[12px] whitespace-nowrap">Price Calculator</span>
       </div>
 
       {/* Page header */}
-      <div className="bg-white border-b border-[#c8cdd6] px-6 py-4 flex items-center justify-between">
+      <div className="bg-white border-b border-[#c8cdd6] px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-[16px] font-bold text-[#1a2332] tracking-tight">Freight Price Calculator</h1>
-          <p className="text-[12px] text-[#6b7889] mt-0.5">Calculate estimated freight charges between origin and destination</p>
+          <h1 className="text-[15px] sm:text-[16px] font-bold text-[#1a2332] tracking-tight">Freight Price Calculator</h1>
+          <p className="text-[11px] sm:text-[12px] text-[#6b7889] mt-0.5 hidden sm:block">Calculate estimated freight charges between origin and destination</p>
         </div>
-        <div className="flex items-center gap-3">
-          <span className={`text-[11px] font-semibold uppercase tracking-wide px-2 py-1 border
+        <div className="flex items-center gap-3 shrink-0">
+          <span className={`text-[11px] font-semibold uppercase tracking-wide px-2 py-1 border whitespace-nowrap
             ${fetchingCountries ? 'border-amber-400 bg-amber-50 text-amber-700' : 'border-green-400 bg-green-50 text-green-700'}`}>
             {fetchingCountries ? 'Loading...' : 'System Ready'}
           </span>
@@ -150,7 +150,7 @@ export default function App() {
       </div>
 
       {/* Main content */}
-      <div className="flex-1 p-6">
+      <div className="flex-1 p-3 sm:p-6">
         <div className="max-w-3xl mx-auto">
           {fetchingCountries ? (
             <div className="bg-white border border-[#c8cdd6] p-12 flex flex-col items-center gap-3">
@@ -169,14 +169,14 @@ export default function App() {
             <div className="bg-white border border-[#c8cdd6]">
               <StepIndicator steps={STEPS} current={step} />
 
-              <div className="px-6 pb-6">
+              <div className="px-3 sm:px-6 pb-4 sm:pb-6">
 
                 {/* STEP 1: Route */}
                 {step === 1 && (
-                  <div className="flex flex-col gap-5">
-                    <div className="grid grid-cols-2 gap-6">
+                  <div className="flex flex-col gap-4 sm:gap-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                       {/* Origin */}
-                      <fieldset className="border border-[#c8cdd6] p-4">
+                      <fieldset className="border border-[#c8cdd6] p-3 sm:p-4">
                         <legend className="px-2 text-[11px] font-bold uppercase tracking-wider text-[#1b3f6b]">
                           Origin
                         </legend>
@@ -215,7 +215,7 @@ export default function App() {
                       </fieldset>
 
                       {/* Destination */}
-                      <fieldset className="border border-[#c8cdd6] p-4">
+                      <fieldset className="border border-[#c8cdd6] p-3 sm:p-4">
                         <legend className="px-2 text-[11px] font-bold uppercase tracking-wider text-[#1b3f6b]">
                           Destination
                         </legend>
@@ -256,13 +256,13 @@ export default function App() {
 
                     {/* Route preview */}
                     {form.sourceCountry && form.destinationCountry && (
-                      <div className="bg-[#f4f5f7] border border-[#dde1e7] px-4 py-2 flex items-center gap-3 text-[12px]">
+                      <div className="bg-[#f4f5f7] border border-[#dde1e7] px-3 sm:px-4 py-2 flex flex-wrap items-center gap-2 sm:gap-3 text-[12px]">
                         <span className="text-[#4a5568] uppercase tracking-wide font-semibold text-[11px]">Route</span>
                         <span className="text-[#1a2332] font-medium">{form.sourceName || '—'}</span>
-                        <span className="text-[#8a95a3]">to</span>
+                        <span className="text-[#8a95a3]">→</span>
                         <span className="text-[#1a2332] font-medium">{form.destinationName || '—'}</span>
-                        <span className="ml-auto px-2 py-0.5 text-[11px] font-semibold uppercase border
-                          ${form.serviceType === 'domestic' ? 'border-[#1b3f6b] text-[#1b3f6b] bg-[#e8edf5]' : 'border-[#4a7ab5] text-[#4a7ab5] bg-[#edf3fb]'}">
+                        <span className={`sm:ml-auto px-2 py-0.5 text-[11px] font-semibold uppercase border
+                          ${form.serviceType === 'domestic' ? 'border-[#1b3f6b] text-[#1b3f6b] bg-[#e8edf5]' : 'border-[#4a7ab5] text-[#4a7ab5] bg-[#edf3fb]'}`}>
                           {form.serviceType === 'domestic' ? 'Domestic' : 'International'}
                         </span>
                       </div>
@@ -274,12 +274,12 @@ export default function App() {
 
                 {/* STEP 2: Parcel */}
                 {step === 2 && (
-                  <div className="flex flex-col gap-5">
-                    <fieldset className="border border-[#c8cdd6] p-4">
+                  <div className="flex flex-col gap-4 sm:gap-5">
+                    <fieldset className="border border-[#c8cdd6] p-3 sm:p-4">
                       <legend className="px-2 text-[11px] font-bold uppercase tracking-wider text-[#1b3f6b]">
                         Package Dimensions
                       </legend>
-                      <div className="grid grid-cols-4 gap-4 mt-1">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mt-1">
                         <InputField label="Pieces" value={form.pieces} onChange={(v) => set('pieces', v)} min={1} step={1} required />
                         <InputField label="Length" value={form.length} onChange={(v) => set('length', v)} unit="cm" min={0.01} step={0.01} required />
                         <InputField label="Width" value={form.width} onChange={(v) => set('width', v)} unit="cm" min={0.01} step={0.01} required />
@@ -287,11 +287,11 @@ export default function App() {
                       </div>
                     </fieldset>
 
-                    <fieldset className="border border-[#c8cdd6] p-4">
+                    <fieldset className="border border-[#c8cdd6] p-3 sm:p-4">
                       <legend className="px-2 text-[11px] font-bold uppercase tracking-wider text-[#1b3f6b]">
                         Weight & Value
                       </legend>
-                      <div className="grid grid-cols-2 gap-4 mt-1">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-1">
                         <InputField label="Gross Weight" value={form.grossWeight} onChange={(v) => set('grossWeight', v)} unit="kg" min={0.01} step={0.01} required />
                         <InputField label="Declared Value" value={form.declaredValue} onChange={(v) => set('declaredValue', v)} unit="ZMW" min={0.01} step={0.01} required />
                       </div>
@@ -302,7 +302,7 @@ export default function App() {
                       <div className="px-4 py-1.5 border-b border-[#dde1e7] bg-[#eef0f3]">
                         <span className="text-[11px] font-bold uppercase tracking-wider text-[#4a5568]">Computed Values</span>
                       </div>
-                      <div className="grid grid-cols-3 divide-x divide-[#dde1e7]">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-[#dde1e7]">
                         <ComputedField label="Volumetric Weight"
                           value={`${((form.length * form.width * form.height) / 5000).toFixed(2)} kg`} />
                         <ComputedField label="Chargeable Weight"
@@ -318,8 +318,8 @@ export default function App() {
 
                 {/* STEP 3: Options */}
                 {step === 3 && (
-                  <div className="flex flex-col gap-5">
-                    <fieldset className="border border-[#c8cdd6] p-4">
+                  <div className="flex flex-col gap-4 sm:gap-5">
+                    <fieldset className="border border-[#c8cdd6] p-3 sm:p-4">
                       <legend className="px-2 text-[11px] font-bold uppercase tracking-wider text-[#1b3f6b]">
                         Service Configuration
                       </legend>
@@ -350,25 +350,27 @@ export default function App() {
                       <div className="bg-[#eef0f3] border-b border-[#c8cdd6] px-4 py-1.5">
                         <span className="text-[11px] font-bold uppercase tracking-wider text-[#4a5568]">Quotation Summary</span>
                       </div>
-                      <table className="w-full text-[12px]">
-                        <tbody>
-                          {[
-                            ['Origin', form.sourceName || '—'],
-                            ['Destination', form.destinationName || '—'],
-                            ['Service', form.serviceType === 'domestic' ? 'Domestic' : 'International'],
-                            ['Dimensions', `${form.length} × ${form.width} × ${form.height} cm`],
-                            ['Gross Weight', `${form.grossWeight} kg`],
-                            ['Pieces', form.pieces],
-                            ['Declared Value', `ZMW ${Number(form.declaredValue).toLocaleString()}`],
-                            ['Insurance', form.insurance ? `ZMW ${(Number(form.declaredValue) * 0.02).toFixed(2)}` : 'None'],
-                          ].map(([k, v], i) => (
-                            <tr key={k} className={i % 2 === 0 ? 'bg-white' : 'bg-[#f7f8fa]'}>
-                              <td className="px-4 py-2 text-[#4a5568] font-semibold border-r border-[#e2e5ea] w-40">{k}</td>
-                              <td className="px-4 py-2 text-[#1a2332] font-medium">{String(v)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-[12px] min-w-[280px]">
+                          <tbody>
+                            {[
+                              ['Origin', form.sourceName || '—'],
+                              ['Destination', form.destinationName || '—'],
+                              ['Service', form.serviceType === 'domestic' ? 'Domestic' : 'International'],
+                              ['Dimensions', `${form.length} × ${form.width} × ${form.height} cm`],
+                              ['Gross Weight', `${form.grossWeight} kg`],
+                              ['Pieces', form.pieces],
+                              ['Declared Value', `ZMW ${Number(form.declaredValue).toLocaleString()}`],
+                              ['Insurance', form.insurance ? `ZMW ${(Number(form.declaredValue) * 0.02).toFixed(2)}` : 'None'],
+                            ].map(([k, v], i) => (
+                              <tr key={k} className={i % 2 === 0 ? 'bg-white' : 'bg-[#f7f8fa]'}>
+                                <td className="px-3 sm:px-4 py-2 text-[#4a5568] font-semibold border-r border-[#e2e5ea] w-32 sm:w-40 text-[11px] sm:text-[12px]">{k}</td>
+                                <td className="px-3 sm:px-4 py-2 text-[#1a2332] font-medium text-[11px] sm:text-[12px]">{String(v)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
 
                     {error && (
@@ -396,7 +398,7 @@ export default function App() {
             </div>
           )}
 
-          <div className="mt-3 text-[11px] text-[#8a95a3] text-right">
+          <div className="mt-3 text-[11px] text-[#8a95a3] text-center sm:text-right">
             Mercury MES API v3 &nbsp;&bull;&nbsp; Rates are estimates only
           </div>
         </div>
@@ -424,11 +426,11 @@ function ComputedField({ label, value }) {
 
 function FormActions({ onBack, onNext, nextLabel = 'Next', nextDisabled, nextLoading }) {
   return (
-    <div className="flex items-center gap-2 pt-2 border-t border-[#dde1e7] mt-2">
+    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-2 border-t border-[#dde1e7] mt-2">
       {onBack && (
         <button
           onClick={onBack}
-          className="px-5 h-8 border border-[#b0b8c4] text-[#1a2332] text-[12px] font-semibold uppercase tracking-wide hover:bg-[#eef0f3]"
+          className="w-full sm:w-auto px-5 h-9 border border-[#b0b8c4] text-[#1a2332] text-[12px] font-semibold uppercase tracking-wide hover:bg-[#eef0f3]"
         >
           Back
         </button>
@@ -436,7 +438,7 @@ function FormActions({ onBack, onNext, nextLabel = 'Next', nextDisabled, nextLoa
       <button
         onClick={onNext}
         disabled={nextDisabled}
-        className={`px-6 h-8 text-[12px] font-semibold uppercase tracking-wide flex items-center gap-2
+        className={`w-full sm:w-auto px-6 h-9 text-[12px] font-semibold uppercase tracking-wide flex items-center justify-center gap-2
           ${nextDisabled
             ? 'bg-[#c8cdd6] text-[#8a95a3] cursor-not-allowed'
             : 'bg-[#1b3f6b] text-white hover:bg-[#15305a]'}`}
