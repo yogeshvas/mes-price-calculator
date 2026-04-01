@@ -1,5 +1,4 @@
-const EMAIL = import.meta.env.VITE_MES_EMAIL
-const PRIVATE_KEY = import.meta.env.VITE_MES_PRIVATE_KEY
+import { MES_EMAIL as EMAIL, MES_PRIVATE_KEY as PRIVATE_KEY } from './constants'
 
 const TIMEOUT_MS = 15000
 

@@ -7,19 +7,17 @@ import ResultCard from './components/ResultCard'
 import CountrySearchSelect from './components/CountrySearchSelect'
 import './index.css'
 
-const STEPS = ['Route', 'Parcel', 'Options', 'Result']
+const STEPS = ['Service', 'Route', 'Parcel', 'Options', 'Result']
 const ZAMBIA_ID = '3'
-
-const LUSAKA_ID = '3'
-const LUSAKA_NAME = 'Lusaka'
+const ZAMBIA_NAME = 'Zambia'
 
 const DEFAULT_FORM = {
-  sourceCountry: LUSAKA_ID,
-  sourceName: LUSAKA_NAME,
+  sourceCountry: '',
+  sourceName: '',
   sourceState: '',
   sourceCity: '',
-  destinationCountry: LUSAKA_ID,
-  destinationName: LUSAKA_NAME,
+  destinationCountry: '',
+  destinationName: '',
   destinationState: '',
   destinationCity: '',
   pieces: 1,
@@ -29,12 +27,34 @@ const DEFAULT_FORM = {
   grossWeight: 1,
   declaredValue: 100,
   insurance: false,
-  serviceType: 'international',
+  serviceType: '',
+}
+
+function getInitialFormAndStep() {
+  const t = new URLSearchParams(window.location.search).get('type')
+  if (t === 'domestic') {
+    return {
+      step: 2,
+      form: {
+        ...DEFAULT_FORM,
+        serviceType: 'domestic',
+        sourceCountry: ZAMBIA_ID,
+        sourceName: ZAMBIA_NAME,
+        destinationCountry: ZAMBIA_ID,
+        destinationName: ZAMBIA_NAME,
+      },
+    }
+  }
+  if (t === 'international') {
+    return { step: 2, form: { ...DEFAULT_FORM, serviceType: 'international' } }
+  }
+  return { step: 1, form: DEFAULT_FORM }
 }
 
 export default function App() {
-  const [step, setStep] = useState(1)
-  const [form, setForm] = useState(DEFAULT_FORM)
+  const [{ step: initStep, form: initForm }] = useState(getInitialFormAndStep)
+  const [step, setStep] = useState(initStep)
+  const [form, setForm] = useState(initForm)
   const [countriesData, setCountriesData] = useState([])
   const [loading, setLoading] = useState(false)
   const [fetchingCountries, setFetchingCountries] = useState(true)
@@ -47,6 +67,14 @@ export default function App() {
       .catch(() => setError('Failed to load reference data.'))
       .finally(() => setFetchingCountries(false))
   }, [])
+
+  // Sync ?type= URL param when service type is chosen
+  useEffect(() => {
+    if (!form.serviceType) return
+    const url = new URL(window.location.href)
+    url.searchParams.set('type', form.serviceType)
+    window.history.replaceState({}, '', url)
+  }, [form.serviceType])
 
   function getCountryObj(id) {
     return countriesData.find((c) => String(c.id) === String(id))
@@ -71,26 +99,36 @@ export default function App() {
     setForm((f) => ({ ...f, [field]: value }))
   }
 
-  useEffect(() => {
-    if (form.sourceCountry && form.destinationCountry) {
-      const isDomestic = form.sourceCountry === form.destinationCountry && form.sourceCountry === ZAMBIA_ID
-      setForm((f) => ({ ...f, serviceType: isDomestic ? 'domestic' : 'international' }))
+  function selectService(type) {
+    if (type === 'domestic') {
+      setForm({
+        ...DEFAULT_FORM,
+        serviceType: 'domestic',
+        sourceCountry: ZAMBIA_ID,
+        sourceName: ZAMBIA_NAME,
+        destinationCountry: ZAMBIA_ID,
+        destinationName: ZAMBIA_NAME,
+      })
+    } else {
+      setForm({ ...DEFAULT_FORM, serviceType: 'international' })
     }
-  }, [form.sourceCountry, form.destinationCountry])
+    setStep(2)
+  }
 
-  const isZambiaSource = String(form.sourceCountry) === ZAMBIA_ID
-  const isZambiaDestination = String(form.destinationCountry) === ZAMBIA_ID
+  const isDomestic = form.serviceType === 'domestic'
 
   const sourceStates = useMemo(() => getStates(form.sourceCountry), [form.sourceCountry, countriesData])
   const sourceCities = useMemo(() => getCities(form.sourceCountry, form.sourceState), [form.sourceCountry, form.sourceState, countriesData])
   const destStates = useMemo(() => getStates(form.destinationCountry), [form.destinationCountry, countriesData])
   const destCities = useMemo(() => getCities(form.destinationCountry, form.destinationState), [form.destinationCountry, form.destinationState, countriesData])
 
-  const step1Valid = form.sourceCountry && form.destinationCountry &&
-    (!isZambiaSource || form.sourceCity) &&
-    (!isZambiaDestination || form.destinationCity)
+  const step2Valid =
+    form.sourceCountry && form.destinationCountry &&
+    (sourceCities.length === 0 || form.sourceCity) &&
+    (destCities.length === 0 || form.destinationCity)
 
-  const step2Valid = Number(form.pieces) > 0 && Number(form.length) > 0 &&
+  const step3Valid =
+    Number(form.pieces) > 0 && Number(form.length) > 0 &&
     Number(form.width) > 0 && Number(form.height) > 0 &&
     Number(form.grossWeight) > 0 && Number(form.declaredValue) > 0
 
@@ -99,8 +137,8 @@ export default function App() {
     setError(null)
     setResult(null)
     try {
-      const sourceCity = isZambiaSource ? form.sourceCity : form.sourceCountry
-      const destinationCity = isZambiaDestination ? form.destinationCity : form.destinationCountry
+      const sourceCity = sourceCities.length > 0 ? form.sourceCity : form.sourceCountry
+      const destinationCity = destCities.length > 0 ? form.destinationCity : form.destinationCountry
       const data = await fetchFreightCharge({
         sourceCountry: form.sourceCountry, sourceCity,
         destinationCountry: form.destinationCountry, destinationCity,
@@ -109,7 +147,7 @@ export default function App() {
         height: form.height, grossWeight: form.grossWeight, declaredValue: form.declaredValue,
       })
       setResult(data)
-      setStep(4)
+      setStep(5)
     } catch (e) {
       setError(e.message || 'Request failed')
     } finally {
@@ -122,7 +160,16 @@ export default function App() {
     setResult(null)
     setError(null)
     setStep(1)
+    const url = new URL(window.location.href)
+    url.searchParams.delete('type')
+    window.history.replaceState({}, '', url)
   }
+
+  // Volumetric weight: inches → L×W×H / 305 = kg
+  const volWeight = (form.length * form.width * form.height) / 305
+  const chargeableWeight = Math.max(Number(form.grossWeight), volWeight)
+  // Total volume in m³ from inches (1 in³ = 0.000016387 m³)
+  const totalVolume = form.length * form.width * form.height * 0.000016387
 
   return (
     <div className="min-h-screen bg-[#eef0f3] flex flex-col">
@@ -171,8 +218,46 @@ export default function App() {
 
               <div className="px-3 sm:px-6 pb-4 sm:pb-6">
 
-                {/* STEP 1: Route */}
+                {/* STEP 1: Service Type */}
                 {step === 1 && (
+                  <div className="flex flex-col gap-4 sm:gap-6">
+                    <p className="text-[13px] text-[#4a5568] text-center mt-1">What type of shipment are you sending?</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <button
+                        onClick={() => selectService('domestic')}
+                        className="border-2 border-[#c8cdd6] hover:border-[#1b3f6b] hover:bg-[#f0f4fa] p-6 sm:p-8 flex flex-col items-center gap-3 transition-colors group"
+                      >
+                        <div className="w-12 h-12 bg-[#e8edf5] group-hover:bg-[#d0ddf0] flex items-center justify-center">
+                          <svg className="w-6 h-6 text-[#1b3f6b]" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+                          </svg>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-[14px] font-bold text-[#1a2332] uppercase tracking-wide">Domestic</p>
+                          <p className="text-[12px] text-[#6b7889] mt-1">Within Zambia</p>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => selectService('international')}
+                        className="border-2 border-[#c8cdd6] hover:border-[#1b3f6b] hover:bg-[#f0f4fa] p-6 sm:p-8 flex flex-col items-center gap-3 transition-colors group"
+                      >
+                        <div className="w-12 h-12 bg-[#e8edf5] group-hover:bg-[#d0ddf0] flex items-center justify-center">
+                          <svg className="w-6 h-6 text-[#1b3f6b]" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253M3 12c0 .778.099 1.533.284 2.253" />
+                          </svg>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-[14px] font-bold text-[#1a2332] uppercase tracking-wide">International</p>
+                          <p className="text-[12px] text-[#6b7889] mt-1">Worldwide delivery</p>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* STEP 2: Route */}
+                {step === 2 && (
                   <div className="flex flex-col gap-4 sm:gap-5">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                       {/* Origin */}
@@ -187,9 +272,9 @@ export default function App() {
                             valueName={form.sourceName}
                             onChange={(id, name) => { set('sourceCountry', id); set('sourceName', name); set('sourceState', ''); set('sourceCity', '') }}
                             required
-                            locked
+                            locked={isDomestic}
                           />
-                          {isZambiaSource && sourceStates.length > 0 && (
+                          {sourceStates.length > 0 && (
                             <SelectField
                               label="Province"
                               value={form.sourceState}
@@ -198,7 +283,7 @@ export default function App() {
                               placeholder="-- Select Province --"
                             />
                           )}
-                          {isZambiaSource && sourceCities.length > 0 && (
+                          {sourceCities.length > 0 && (
                             <SelectField
                               label="City"
                               value={form.sourceCity}
@@ -208,8 +293,8 @@ export default function App() {
                               required
                             />
                           )}
-                          {!isZambiaSource && form.sourceCountry && (
-                            <Notice text="City selection not required for international origins." />
+                          {!isDomestic && form.sourceCountry && sourceCities.length === 0 && (
+                            <Notice text="City selection not required for this origin." />
                           )}
                         </div>
                       </fieldset>
@@ -226,9 +311,9 @@ export default function App() {
                             valueName={form.destinationName}
                             onChange={(id, name) => { set('destinationCountry', id); set('destinationName', name); set('destinationState', ''); set('destinationCity', '') }}
                             required
-                            locked
+                            locked={isDomestic}
                           />
-                          {isZambiaDestination && destStates.length > 0 && (
+                          {destStates.length > 0 && (
                             <SelectField
                               label="Province"
                               value={form.destinationState}
@@ -237,7 +322,7 @@ export default function App() {
                               placeholder="-- Select Province --"
                             />
                           )}
-                          {isZambiaDestination && destCities.length > 0 && (
+                          {destCities.length > 0 && (
                             <SelectField
                               label="City"
                               value={form.destinationCity}
@@ -247,8 +332,8 @@ export default function App() {
                               required
                             />
                           )}
-                          {!isZambiaDestination && form.destinationCountry && (
-                            <Notice text="City selection not required for international destinations." />
+                          {!isDomestic && form.destinationCountry && destCities.length === 0 && (
+                            <Notice text="City selection not required for this destination." />
                           )}
                         </div>
                       </fieldset>
@@ -262,18 +347,18 @@ export default function App() {
                         <span className="text-[#8a95a3]">→</span>
                         <span className="text-[#1a2332] font-medium">{form.destinationName || '—'}</span>
                         <span className={`sm:ml-auto px-2 py-0.5 text-[11px] font-semibold uppercase border
-                          ${form.serviceType === 'domestic' ? 'border-[#1b3f6b] text-[#1b3f6b] bg-[#e8edf5]' : 'border-[#4a7ab5] text-[#4a7ab5] bg-[#edf3fb]'}`}>
-                          {form.serviceType === 'domestic' ? 'Domestic' : 'International'}
+                          ${isDomestic ? 'border-[#1b3f6b] text-[#1b3f6b] bg-[#e8edf5]' : 'border-[#4a7ab5] text-[#4a7ab5] bg-[#edf3fb]'}`}>
+                          {isDomestic ? 'Domestic' : 'International'}
                         </span>
                       </div>
                     )}
 
-                    <FormActions onNext={() => setStep(2)} nextDisabled={!step1Valid} />
+                    <FormActions onBack={() => setStep(1)} onNext={() => setStep(3)} nextDisabled={!step2Valid} />
                   </div>
                 )}
 
-                {/* STEP 2: Parcel */}
-                {step === 2 && (
+                {/* STEP 3: Parcel */}
+                {step === 3 && (
                   <div className="flex flex-col gap-4 sm:gap-5">
                     <fieldset className="border border-[#c8cdd6] p-3 sm:p-4">
                       <legend className="px-2 text-[11px] font-bold uppercase tracking-wider text-[#1b3f6b]">
@@ -281,9 +366,9 @@ export default function App() {
                       </legend>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mt-1">
                         <InputField label="Pieces" value={form.pieces} onChange={(v) => set('pieces', v)} min={1} step={1} required />
-                        <InputField label="Length" value={form.length} onChange={(v) => set('length', v)} unit="cm" min={0.01} step={0.01} required />
-                        <InputField label="Width" value={form.width} onChange={(v) => set('width', v)} unit="cm" min={0.01} step={0.01} required />
-                        <InputField label="Height" value={form.height} onChange={(v) => set('height', v)} unit="cm" min={0.01} step={0.01} required />
+                        <InputField label="Length" value={form.length} onChange={(v) => set('length', v)} unit="in" min={0.01} step={0.01} required />
+                        <InputField label="Width" value={form.width} onChange={(v) => set('width', v)} unit="in" min={0.01} step={0.01} required />
+                        <InputField label="Height" value={form.height} onChange={(v) => set('height', v)} unit="in" min={0.01} step={0.01} required />
                       </div>
                     </fieldset>
 
@@ -303,21 +388,18 @@ export default function App() {
                         <span className="text-[11px] font-bold uppercase tracking-wider text-[#4a5568]">Computed Values</span>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-[#dde1e7]">
-                        <ComputedField label="Volumetric Weight"
-                          value={`${((form.length * form.width * form.height) / 5000).toFixed(2)} kg`} />
-                        <ComputedField label="Chargeable Weight"
-                          value={`${Math.max(Number(form.grossWeight), (form.length * form.width * form.height) / 5000).toFixed(2)} kg`} />
-                        <ComputedField label="Total Volume"
-                          value={`${((form.length * form.width * form.height) / 1000000).toFixed(4)} m³`} />
+                        <ComputedField label="Volumetric Weight" value={`${volWeight.toFixed(2)} kg`} />
+                        <ComputedField label="Chargeable Weight" value={`${chargeableWeight.toFixed(2)} kg`} />
+                        <ComputedField label="Total Volume" value={`${totalVolume.toFixed(4)} m³`} />
                       </div>
                     </div>
 
-                    <FormActions onBack={() => setStep(1)} onNext={() => setStep(3)} nextDisabled={!step2Valid} />
+                    <FormActions onBack={() => setStep(2)} onNext={() => setStep(4)} nextDisabled={!step3Valid} />
                   </div>
                 )}
 
-                {/* STEP 3: Options */}
-                {step === 3 && (
+                {/* STEP 4: Options */}
+                {step === 4 && (
                   <div className="flex flex-col gap-4 sm:gap-5">
                     <fieldset className="border border-[#c8cdd6] p-3 sm:p-4">
                       <legend className="px-2 text-[11px] font-bold uppercase tracking-wider text-[#1b3f6b]">
@@ -345,7 +427,7 @@ export default function App() {
                       </div>
                     </fieldset>
 
-                    {/* Pre-submit summary table */}
+                    {/* Pre-submit summary */}
                     <div className="border border-[#c8cdd6]">
                       <div className="bg-[#eef0f3] border-b border-[#c8cdd6] px-4 py-1.5">
                         <span className="text-[11px] font-bold uppercase tracking-wider text-[#4a5568]">Quotation Summary</span>
@@ -356,8 +438,8 @@ export default function App() {
                             {[
                               ['Origin', form.sourceName || '—'],
                               ['Destination', form.destinationName || '—'],
-                              ['Service', form.serviceType === 'domestic' ? 'Domestic' : 'International'],
-                              ['Dimensions', `${form.length} × ${form.width} × ${form.height} cm`],
+                              ['Service', isDomestic ? 'Domestic' : 'International'],
+                              ['Dimensions', `${form.length} × ${form.width} × ${form.height} in`],
                               ['Gross Weight', `${form.grossWeight} kg`],
                               ['Pieces', form.pieces],
                               ['Declared Value', `ZMW ${Number(form.declaredValue).toLocaleString()}`],
@@ -380,7 +462,7 @@ export default function App() {
                     )}
 
                     <FormActions
-                      onBack={() => setStep(2)}
+                      onBack={() => setStep(3)}
                       onNext={handleGetQuote}
                       nextLabel={loading ? 'Processing...' : 'Calculate Freight'}
                       nextDisabled={loading}
@@ -389,8 +471,8 @@ export default function App() {
                   </div>
                 )}
 
-                {/* STEP 4: Result */}
-                {step === 4 && result && (
+                {/* STEP 5: Result */}
+                {step === 5 && result && (
                   <ResultCard result={result} formData={form} onReset={handleReset} />
                 )}
 
