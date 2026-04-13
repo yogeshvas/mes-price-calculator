@@ -1,4 +1,27 @@
+import { useRef, useState } from 'react'
+import html2canvas from 'html2canvas'
+
 export default function ResultCard({ result, formData, onReset }) {
+  const cardRef = useRef(null)
+  const [downloading, setDownloading] = useState(false)
+
+  async function handleDownload() {
+    if (!cardRef.current) return
+    setDownloading(true)
+    try {
+      const canvas = await html2canvas(cardRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+      })
+      const link = document.createElement('a')
+      link.download = 'freight-quote.png'
+      link.href = canvas.toDataURL('image/png')
+      link.click()
+    } finally {
+      setDownloading(false)
+    }
+  }
   const isSuccess = result.error_code === 508
 
   if (!isSuccess) {
@@ -29,6 +52,8 @@ export default function ResultCard({ result, formData, onReset }) {
 
   return (
     <div className="flex flex-col gap-0">
+      {/* Captured area */}
+      <div ref={cardRef} className="flex flex-col gap-0">
       {/* Rate header */}
       <div className="bg-[#1b3f6b] px-4 sm:px-5 py-4 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 sm:gap-0">
         <div>
@@ -60,6 +85,8 @@ export default function ResultCard({ result, formData, onReset }) {
         </table>
       </div>
 
+      </div>{/* end captured area */}
+
       {/* Actions */}
       <div className="flex flex-col sm:flex-row gap-2 pt-4 border-t border-[#c8cdd6] mt-4">
         <button
@@ -69,10 +96,14 @@ export default function ResultCard({ result, formData, onReset }) {
           New Quote
         </button>
         <button
-          onClick={() => window.print()}
-          className="w-full sm:w-auto px-5 h-9 bg-[#1b3f6b] text-white text-[12px] font-semibold uppercase tracking-wide hover:bg-[#15305a]"
+          onClick={handleDownload}
+          disabled={downloading}
+          className="w-full sm:w-auto px-5 h-9 bg-[#1b3f6b] text-white text-[12px] font-semibold uppercase tracking-wide hover:bg-[#15305a] disabled:opacity-60 flex items-center justify-center gap-2"
         >
-          Print
+          {downloading && (
+            <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          )}
+          {downloading ? 'Saving...' : 'Save as Image'}
         </button>
       </div>
     </div>
