@@ -3,23 +3,30 @@ import html2canvas from 'html2canvas'
 
 export default function ResultCard({ result, formData, onReset }) {
   const cardRef = useRef(null)
-  const [downloading, setDownloading] = useState(false)
+  const [generating, setGenerating] = useState(false)
+  const [previewUrl, setPreviewUrl] = useState(null)
 
-  async function handleDownload() {
+  async function handleSave() {
     if (!cardRef.current) return
-    setDownloading(true)
+    setGenerating(true)
     try {
       const canvas = await html2canvas(cardRef.current, {
         scale: 2,
         useCORS: true,
         backgroundColor: '#ffffff',
       })
+      const dataUrl = canvas.toDataURL('image/png')
+
+      // Try normal download first (works in regular browsers)
       const link = document.createElement('a')
       link.download = 'freight-quote.png'
-      link.href = canvas.toDataURL('image/png')
+      link.href = dataUrl
       link.click()
+
+      // Also show the preview overlay (helps in-app browsers like WhatsApp)
+      setPreviewUrl(dataUrl)
     } finally {
-      setDownloading(false)
+      setGenerating(false)
     }
   }
   const isSuccess = result.error_code === 508
@@ -96,16 +103,40 @@ export default function ResultCard({ result, formData, onReset }) {
           New Quote
         </button>
         <button
-          onClick={handleDownload}
-          disabled={downloading}
+          onClick={handleSave}
+          disabled={generating}
           className="w-full sm:w-auto px-5 h-9 bg-[#1b3f6b] text-white text-[12px] font-semibold uppercase tracking-wide hover:bg-[#15305a] disabled:opacity-60 flex items-center justify-center gap-2"
         >
-          {downloading && (
+          {generating && (
             <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
           )}
-          {downloading ? 'Saving...' : 'Save as Image'}
+          {generating ? 'Generating...' : 'Save as Image'}
         </button>
       </div>
+
+      {/* Image preview overlay — for in-app browsers (WhatsApp etc.) that block downloads */}
+      {previewUrl && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex flex-col items-center justify-center p-4 gap-4"
+          onClick={() => setPreviewUrl(null)}
+        >
+          <p className="text-white text-[13px] font-semibold text-center">
+            Hold / long-press the image below to save it
+          </p>
+          <img
+            src={previewUrl}
+            alt="Freight quote"
+            className="max-w-full max-h-[75vh] rounded shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <button
+            onClick={() => setPreviewUrl(null)}
+            className="text-white text-[12px] uppercase tracking-wide border border-white/40 px-4 h-8 hover:bg-white/10"
+          >
+            Close
+          </button>
+        </div>
+      )}
     </div>
   )
 }
