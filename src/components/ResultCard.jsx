@@ -4,7 +4,6 @@ import html2canvas from 'html2canvas'
 export default function ResultCard({ result, formData, onReset }) {
   const cardRef = useRef(null)
   const [generating, setGenerating] = useState(false)
-  const [previewUrl, setPreviewUrl] = useState(null)
 
   async function handleSave() {
     if (!cardRef.current) return
@@ -15,20 +14,33 @@ export default function ResultCard({ result, formData, onReset }) {
         useCORS: true,
         backgroundColor: '#ffffff',
       })
-      const dataUrl = canvas.toDataURL('image/png')
 
-      // Try normal download first (works in regular browsers)
-      const link = document.createElement('a')
-      link.download = 'freight-quote.png'
-      link.href = dataUrl
-      link.click()
+      canvas.toBlob(async (blob) => {
+        const file = new File([blob], 'freight-quote.png', { type: 'image/png' })
 
-      // Also show the preview overlay (helps in-app browsers like WhatsApp)
-      setPreviewUrl(dataUrl)
+        // Use native share sheet (works in WhatsApp browser, Chrome, Safari on mobile)
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({ files: [file], title: 'Freight Quote' })
+            return
+          } catch (e) {
+            // User cancelled or share failed — fall through to download
+          }
+        }
+
+        // Desktop / browsers that don't support file sharing
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.download = 'freight-quote.png'
+        link.href = url
+        link.click()
+        setTimeout(() => URL.revokeObjectURL(url), 1000)
+      }, 'image/png')
     } finally {
       setGenerating(false)
     }
   }
+
   const isSuccess = result.error_code === 508
 
   if (!isSuccess) {
@@ -61,38 +73,37 @@ export default function ResultCard({ result, formData, onReset }) {
     <div className="flex flex-col gap-0">
       {/* Captured area */}
       <div ref={cardRef} className="flex flex-col gap-0">
-      {/* Rate header */}
-      <div className="bg-[#1b3f6b] px-4 sm:px-5 py-4 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 sm:gap-0">
-        <div>
-          <p className="text-[11px] uppercase tracking-widest text-[#7aaee0] font-semibold mb-1">Estimated Freight Charge</p>
-          <p className="text-[28px] sm:text-[36px] font-bold text-white leading-none tracking-tight">
-            {Number(result.rate).toLocaleString('en-ZM', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            <span className="text-[14px] sm:text-[16px] font-normal text-[#7aaee0] ml-2">ZMW</span>
-          </p>
+        {/* Rate header */}
+        <div className="bg-[#1b3f6b] px-4 sm:px-5 py-4 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 sm:gap-0">
+          <div>
+            <p className="text-[11px] uppercase tracking-widest text-[#7aaee0] font-semibold mb-1">Estimated Freight Charge</p>
+            <p className="text-[28px] sm:text-[36px] font-bold text-white leading-none tracking-tight">
+              {Number(result.rate).toLocaleString('en-ZM', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              <span className="text-[14px] sm:text-[16px] font-normal text-[#7aaee0] ml-2">ZMW</span>
+            </p>
+          </div>
+          <div className="sm:text-right">
+            <p className="text-[11px] text-[#7aaee0] uppercase tracking-wide">Status</p>
+            <p className="text-[13px] font-semibold text-[#4ade80]">CONFIRMED</p>
+          </div>
         </div>
-        <div className="sm:text-right">
-          <p className="text-[11px] text-[#7aaee0] uppercase tracking-wide">Status</p>
-          <p className="text-[13px] font-semibold text-[#4ade80]">CONFIRMED</p>
+
+        {/* Detail table */}
+        <div className="border border-t-0 border-[#c8cdd6] overflow-x-auto">
+          <table className="w-full text-[12px] sm:text-[13px] min-w-[300px]">
+            <tbody>
+              {rows.map((r, i) => (
+                <tr key={r.label} className={i % 2 === 0 ? 'bg-white' : 'bg-[#f7f8fa]'}>
+                  <td className="px-3 sm:px-4 py-2 text-[10px] sm:text-[11px] uppercase tracking-wide text-[#4a5568] font-semibold border-r border-[#e2e5ea] w-32 sm:w-44">
+                    {r.label}
+                  </td>
+                  <td className="px-3 sm:px-4 py-2 text-[#1a2332] font-medium break-words">{String(r.value)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
-
-      {/* Detail table */}
-      <div className="border border-t-0 border-[#c8cdd6] overflow-x-auto">
-        <table className="w-full text-[12px] sm:text-[13px] min-w-[300px]">
-          <tbody>
-            {rows.map((r, i) => (
-              <tr key={r.label} className={i % 2 === 0 ? 'bg-white' : 'bg-[#f7f8fa]'}>
-                <td className="px-3 sm:px-4 py-2 text-[10px] sm:text-[11px] uppercase tracking-wide text-[#4a5568] font-semibold border-r border-[#e2e5ea] w-32 sm:w-44">
-                  {r.label}
-                </td>
-                <td className="px-3 sm:px-4 py-2 text-[#1a2332] font-medium break-words">{String(r.value)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      </div>{/* end captured area */}
 
       {/* Actions */}
       <div className="flex flex-col sm:flex-row gap-2 pt-4 border-t border-[#c8cdd6] mt-4">
@@ -113,30 +124,6 @@ export default function ResultCard({ result, formData, onReset }) {
           {generating ? 'Generating...' : 'Save as Image'}
         </button>
       </div>
-
-      {/* Image preview overlay — for in-app browsers (WhatsApp etc.) that block downloads */}
-      {previewUrl && (
-        <div
-          className="fixed inset-0 z-50 bg-black/80 flex flex-col items-center justify-center p-4 gap-4"
-          onClick={() => setPreviewUrl(null)}
-        >
-          <p className="text-white text-[13px] font-semibold text-center">
-            Hold / long-press the image below to save it
-          </p>
-          <img
-            src={previewUrl}
-            alt="Freight quote"
-            className="max-w-full max-h-[75vh] rounded shadow-lg"
-            onClick={(e) => e.stopPropagation()}
-          />
-          <button
-            onClick={() => setPreviewUrl(null)}
-            className="text-white text-[12px] uppercase tracking-wide border border-white/40 px-4 h-8 hover:bg-white/10"
-          >
-            Close
-          </button>
-        </div>
-      )}
     </div>
   )
 }
